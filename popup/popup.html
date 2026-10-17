@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Open Video Downloader</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <img src="../icons/icon-32.png" alt="Logo" class="brand-icon">
+        <div class="brand-text">
+          <h1>Open Video Downloader</h1>
+          <span class="brand-subtitle">Free & Open Source Media Downloader</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="btnSidePanel" class="icon-btn" title="Open in Side Panel">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+        </button>
+        <button id="btnRescan" class="icon-btn" title="Re-scan Page">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+        </button>
+        <button id="btnClear" class="icon-btn" title="Clear Detected Streams">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Top Navigation Tabs -->
+    <nav class="top-nav">
+      <button id="tabBtnStreams" class="nav-tab active">
+        <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+        <span>Detected Media</span>
+        <span id="navCountStreams" class="nav-badge">0</span>
+      </button>
+      <button id="tabBtnDownloads" class="nav-tab">
+        <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        <span>Downloads</span>
+        <span id="navCountDownloads" class="nav-badge hidden">0</span>
+      </button>
+    </nav>
+
+    <!-- VIEW 1: Detected Streams -->
+    <div id="viewStreams" class="tab-view active">
+      <!-- Filter & Search Bar -->
+      <div class="controls-bar">
+        <div class="filter-tabs">
+          <button class="filter-btn active" data-filter="all">All (<span id="countAll">0</span>)</button>
+          <button class="filter-btn" data-filter="hls">HLS (<span id="countHls">0</span>)</button>
+          <button class="filter-btn" data-filter="video">Video (<span id="countVideo">0</span>)</button>
+          <button class="filter-btn" data-filter="audio">Audio (<span id="countAudio">0</span>)</button>
+        </div>
+        <input type="text" id="searchInput" class="search-input" placeholder="Search streams...">
+      </div>
+
+      <!-- Quick Active Download Banner in Streams View -->
+      <div id="activeDownloadSection" class="active-download-card hidden">
+        <div class="download-info">
+          <span id="downloadTitle" class="download-title">Downloading Stream...</span>
+          <span id="downloadStatus" class="download-status">0%</span>
+        </div>
+        <div class="progress-bar-container">
+          <div id="downloadProgressBar" class="progress-bar-fill" style="width: 0%;"></div>
+        </div>
+        <div class="download-meta">
+          <span id="downloadMetaText">Preparing...</span>
+          <button id="btnCancelDownload" class="btn-cancel">Cancel</button>
+        </div>
+      </div>
+
+      <!-- Stream List Container -->
+      <main class="stream-list-container">
+        <div id="streamList" class="stream-list"></div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="empty-state">
+          <div class="empty-icon">
+            <svg viewBox="0 0 24 24" width="36" height="36" stroke="currentColor" stroke-width="1.5" fill="none"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+          </div>
+          <h3>No media detected yet</h3>
+          <p>Play a video or audio on the page to capture the stream URL automatically.</p>
+        </div>
+      </main>
+    </div>
+
+    <!-- VIEW 2: Downloads (Running & History) -->
+    <div id="viewDownloads" class="tab-view hidden">
+      <div class="downloads-container">
+        <!-- Running Downloads Section -->
+        <div id="runningDownloadsSection" class="section-group">
+          <div class="section-header">
+            <h4>Active Downloads</h4>
+          </div>
+          <div id="runningDownloadsList" class="downloads-list">
+            <div id="noActiveDownloadsMsg" class="empty-subtext">No downloads currently in progress.</div>
+          </div>
+        </div>
+
+        <!-- Completed Download History Section -->
+        <div class="section-group">
+          <div class="section-header">
+            <h4>Completed Downloads</h4>
+            <button id="btnClearHistory" class="btn-text" title="Clear History">Clear All</button>
+          </div>
+          <div id="historyList" class="downloads-list"></div>
+          <div id="emptyHistoryState" class="empty-subtext hidden">No completed downloads yet.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal for CLI / FFmpeg commands -->
+    <div id="commandModal" class="modal-overlay hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>CLI & Downloader Commands</h3>
+          <button id="btnCloseModal" class="icon-btn">&times;</button>
+        </div>
+        <div class="modal-body">
+          <label>FFmpeg (Remux / Download):</label>
+          <div class="command-box">
+            <code id="cmdFfmpeg"></code>
+            <button class="btn-copy-code" data-target="cmdFfmpeg">Copy</button>
+          </div>
+
+          <label>yt-dlp (Universal Downloader):</label>
+          <div class="command-box">
+            <code id="cmdYtdlp"></code>
+            <button class="btn-copy-code" data-target="cmdYtdlp">Copy</button>
+          </div>
+
+          <label>Direct Stream URL:</label>
+          <div class="command-box">
+            <code id="cmdUrl"></code>
+            <button class="btn-copy-code" data-target="cmdUrl">Copy</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <span>100% Free &amp; Open Source</span>
+      <span class="dot">•</span>
+      <span>No Paywalls</span>
+      <span class="dot">•</span>
+      <span>No Watermarks</span>
+    </footer>
+  </div>
+
+  <script src="../lib/mux.min.js"></script>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>
